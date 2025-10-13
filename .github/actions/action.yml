@@ -306,7 +306,8 @@ runs:
         patch -p1 --forward < "../../../kernel_patches/maps/xx_maps_sus_kernel.patch"
         cd "../KernelSU-Next"
         patch -p1 --forward < "../../../kernel_patches/maps/xx_maps_ksu.patch"
-        
+
+
     - name: Add KernelSU-Next and SUSFS Configuration Settings
       shell: bash
       run: |
@@ -439,12 +440,18 @@ runs:
 
     - name: Build Kernel
       shell: bash
+      env:
+        PYTHONWARNINGS: "ignore:invalid escape sequence"
       run: |
         set -euo pipefail
         KERNEL_PATH="$GITHUB_WORKSPACE/$CONFIG/kernel_platform"
         COMMON="$KERNEL_PATH/common"
         cd "$COMMON"
         : > "$COMMON/.scmversion"
+        
+        # Ensure Python warnings are suppressed for scripts invoked by make
+        export PYTHONWARNINGS="${PYTHONWARNINGS}"
+        
         if [ -n "${CLANG_BIN_PATH:-}" ] && [ -x "${CLANG_BIN_PATH}/clang" ]; then
           export PATH="${CLANG_BIN_PATH}:$PATH"
         fi
@@ -457,28 +464,40 @@ runs:
         OUT=out
         mkdir -p "$OUT"
         make O="$OUT" gki_defconfig
+        
+        # LOCALVERSION branding
         if [ -n "${CUSTOM_LOCALVERSION:-}" ]; then
           scripts/config --file "$OUT/.config" --set-str LOCALVERSION "${CUSTOM_LOCALVERSION}"
           scripts/config --file "$OUT/.config" -d LOCALVERSION_AUTO || true
           sed -i 's/scm_version="$(scm_version --short)"/scm_version=""/' scripts/setlocalversion
         fi
+        
+        # Optimize level config and flags
         if [ "${{ inputs.optimize_level }}" = "O3" ]; then
           scripts/config --file "$OUT/.config" -d CC_OPTIMIZE_FOR_PERFORMANCE
           scripts/config --file "$OUT/.config" -e CC_OPTIMIZE_FOR_PERFORMANCE_O3
-          export KCFLAGS="-Wno-error -pipe -O3 -fno-stack-protector"
+          KCFLAGS_EXTRA="-O3"
         else
           scripts/config --file "$OUT/.config" -e CC_OPTIMIZE_FOR_PERFORMANCE
           scripts/config --file "$OUT/.config" -d CC_OPTIMIZE_FOR_PERFORMANCE_O3
-          export KCFLAGS="-Wno-error -pipe -O2 -fno-stack-protector"
+          KCFLAGS_EXTRA="-O2"
         fi
-        export KCPPFLAGS="-DCONFIG_OPTIMIZE_INLINING"
+        
+        # Consistent flags; include -pipe and disable stack protector
+        KCFLAGS="-Wno-error -pipe -fno-stack-protector ${KCFLAGS_EXTRA}"
+        KCPPFLAGS="-DCONFIG_OPTIMIZE_INLINING"
+        
+        # Regenerate defaults after config edits
         make O="$OUT" olddefconfig
+        
         echo "Starting build with $(nproc --all) threads..."
         set -o pipefail
-        make -j"$(nproc --all)" O="$OUT" 2>&1 | tee build.log
+        make -j"$(nproc --all)" O="$OUT" KCFLAGS="$KCFLAGS" KCPPFLAGS="$KCPPFLAGS" 2>&1 | tee build.log
+        
         IMG="$OUT/arch/arm64/boot/Image"
         if [ ! -f "$IMG" ]; then
-          echo "Kernel Image missing"; exit 1
+          echo "Kernel Image missing"
+          exit 1
         fi
         sha256sum "$IMG" | tee "$OUT/Image.sha256"
 
@@ -491,8 +510,8 @@ runs:
         COMMON="$KERNEL_PATH/common"
         OUT="$COMMON/out"
         IMG="$OUT/arch/arm64/boot/Image"
-        WARNINGS=$(grep -i -E 'warning:' "$COMMON/build.log" | wc -l || true)
-        echo "$WARNINGS" > "$OUT/warnings.txt"
+        WARNINGS_COUNT=$(grep -i -E 'warning:' "$COMMON/build.log" | wc -l || true)
+        echo "$WARNINGS_COUNT" > "$OUT/warnings.txt"
         file "$IMG" > "$OUT/Image.file"
         KERNEL_UNAME=$(strings "$IMG" | grep -E 'Linux version.*#' | tail -n1)
         echo "Kernel Uname: $KERNEL_UNAME"
@@ -509,7 +528,7 @@ runs:
         fi
         IMAGE_SHA256=$(cut -d' ' -f1 "$OUT/Image.sha256")
         echo "Image sha256: $IMAGE_SHA256"
-        echo "warnings=$WARNINGS" >> "$GITHUB_OUTPUT"
+        echo "warnings_count=$WARNINGS_COUNT" >> "$GITHUB_OUTPUT"
         echo "image_sha256=$IMAGE_SHA256" >> "$GITHUB_OUTPUT"
 
     - name: Create Kernel ZIP
@@ -564,7 +583,7 @@ runs:
           echo "Optimization: ${{ inputs.optimize_level }}"
           echo "Image SHA256: ${{ steps.collect_stats.outputs.image_sha256 }}"
           echo "Compiler: ${CLANG_VERSION:-unknown}"
-          echo "Warnings: ${{ steps.collect_stats.outputs.warnings }}"
+          echo "Warnings Count: ${{ steps.collect_stats.outputs.warnings_count }}"
         } | tee summary.txt
         {
           echo "### Kernel Build Summary"
@@ -579,7 +598,7 @@ runs:
           echo "- SUSFS branch/commit: [${{ inputs.susfs_commit_hash_or_branch || env.SUSFS_KERNEL_BRANCH }}](https://gitlab.com/simonpunk/susfs4ksu/-/tree/${{ inputs.susfs_commit_hash_or_branch || env.SUSFS_KERNEL_BRANCH }})"
           echo "- Optimization: ${{ inputs.optimize_level }}"
           echo "- Image SHA256: ${{ steps.collect_stats.outputs.image_sha256 }}"
-          echo "- Warnings: ${{ steps.collect_stats.outputs.warnings }}"
+          echo "- Warnings Count: ${{ steps.collect_stats.outputs.warnings_count }}"
         } >> "$GITHUB_STEP_SUMMARY"
     
     - name: Upload Artifacts
@@ -588,4 +607,3 @@ runs:
       with:
         name: kernel-${{ env.CONFIG }}
         path: ${{ env.CONFIG }}/artifacts/
-
