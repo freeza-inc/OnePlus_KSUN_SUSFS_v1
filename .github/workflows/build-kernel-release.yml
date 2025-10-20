@@ -93,7 +93,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           
       - name: Generate and Create New Tag
         run: |
@@ -160,7 +160,7 @@ jobs:
           - [+] BBR v1 Support
           - [+] HMBIRD scx support for OnePlus 13 & OnePlus Ace 5 Pro
           - [+] Baseband Guard Support (BBG).
-          - [+] xx_maps hide.
+          - [+] IP Set Support.
           EOF
           
           # Output for debugging
