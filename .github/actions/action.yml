@@ -64,7 +64,7 @@ runs:
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
           git curl ca-certificates build-essential clang lld flex bison \
           libelf-dev libssl-dev libncurses-dev zlib1g-dev liblz4-tool \
-          libxml2-utils rsync unzip dwarves file python3
+          libxml2-utils rsync unzip dwarves file python3 ccache jq bc dos2unix
         sudo apt-get clean
         echo "::endgroup::"
 
@@ -299,12 +299,8 @@ runs:
         fi
         if [ "${{ inputs.model }}" == "OPAce5Pro" ] || [ "${{ inputs.model }}" == "OP13" ]; then
           echo "Patching hmbird!"
-          echo 'obj-y += hmbird_patch.o' >> ./drivers/Makefile
-          patch -p1 -F 3 < "../../../kernel_patches/oneplus/hmbird/hmbird_kernel_patch.patch"
-          echo "Patching hmbird files!"
-          cd ./kernel/sched
-          rm -rf ext.c ext.h build_policy.c slim.h slim_sysctl.c
-          patch -p1 -F 3 < "../../../../../kernel_patches/oneplus/hmbird/hmbird_files_patch.patch"
+          dos2unix "../../../kernel_patches/oneplus/hmbird/fengchi_OP13_OOS16.patch"
+          patch -p1 -F 3 < "../../../kernel_patches/oneplus/hmbird/fengchi_OP13_OOS16.patch"
         else
           echo "Not OPAce5Pro / OP13 , skipping fengchi patch"
         fi
