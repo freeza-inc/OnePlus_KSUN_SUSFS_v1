@@ -244,9 +244,9 @@ runs:
             patch -p1 --forward < 10_enable_susfs_for_ksu.patch  || true
             for file in $(find ./kernel -maxdepth 2 -name "*.rej" -printf "%f\n" | cut -d'.' -f1); do
               echo "Patching file: $file.c with fix_$file.c.patch"
-              patch -p1 --forward < "../../../kernel_patches/next/susfs_fix_patches/$susfs_version/fix_$file.c.patch"
+              patch -p1 --forward < "../../../kernel_patches/next/susfs_fix_patches/v1.5.12/fix_$file.c.patch"
             done
-            patch -p1 --forward < "../../../kernel_patches/next/susfs_fix_patches/$susfs_version/fix_kernel_compat.c.patch"
+            patch -p1 --forward < "../../../kernel_patches/next/susfs_fix_patches/v1.5.12/fix_kernel_compat.c.patch"
             ;;
           *)
             echo "Invalid version: $susfs_version"
