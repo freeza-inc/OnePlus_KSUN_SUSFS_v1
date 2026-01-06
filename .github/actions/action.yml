@@ -828,7 +828,7 @@ runs:
         sed -i 's/net->ipv4.sysctl_tcp_pacing_ss_ratio = 200;/net->ipv4.sysctl_tcp_pacing_ss_ratio = 180;/' ./net/ipv4/tcp_ipv4.c
         sed -i 's/net->ipv4.sysctl_tcp_pacing_ca_ratio = 120;/net->ipv4.sysctl_tcp_pacing_ca_ratio = 110;/' ./net/ipv4/tcp_ipv4.c
         grep "sysctl_tcp_pacing" ./net/ipv4/tcp_ipv4.c
-        ls -t | grep -E 'tcp_|sysctl_' ./net/ipv4/
+        ls ./net/ipv4/ -t | grep -E 'tcp_|sysctl_'
 
         # Fake kernel patch to fix failures
         fake_patched=0
