@@ -1032,6 +1032,20 @@ runs:
         CONFIG_IP6_NF_MATCH_HL=y
         EOF
 
+    - name: Add Other tweaks
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "Add Other tweaks"
+        cd "$CONFIG/kernel_platform"
+        cat >> common/arch/arm64/configs/gki_defconfig <<EOF
+        CONFIG_ZRAM_DEF_COMP="lz4"
+        CONFIG_ZRAM_DEF_COMP_LZ4=y
+        CONFIG_ZRAM_DEF_COMP_LZORLE=n
+        CONFIG_RCU_TRACE=n
+        CONFIG_IP_NF_TARGET_ECN=y
+        EOF
+
     - name: Add IP SET Support
       if: ${{ env.OP_IP_SET == 'true' }}
       shell: bash
