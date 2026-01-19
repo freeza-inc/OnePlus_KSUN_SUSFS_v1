@@ -645,6 +645,8 @@ runs:
         rm -f msm-kernel/android/abi_gki_protected_exports_* || true
         sed -i 's/protected_modules = \[.*\]/protected_modules = []/' common/modules.bzl || true
         df -h
+        git config --global user.email "freeza@gmail.com"
+        git config --global user.name "Build"
         git remote add google-bbr https://github.com/google/bbr.git
         git fetch google-bbr v3
         git show-ref --verify --quiet refs/remotes/google-bbr/v3 || { echo "Error: google-bbr/v3 branch not found"; exit 1; }
