@@ -345,7 +345,7 @@ runs:
       run: |
         set -euo pipefail
         echo "::group::Get kernel version"
-        cd "$CONFIG_DIR/kernel_platform/common"
+        cd "$COMMON_KERNEL_FOLDER"
         
         CONFIG_FILES=("build.config.common" "build.config.constants")
         BRANCH_LINE=""
