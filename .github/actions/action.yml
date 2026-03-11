@@ -930,7 +930,7 @@ runs:
         
         if grep -qxF $'\t\tconst char* symlink_target_link = inode->i_op->get_link(dentry, inode, NULL);' ./Baseband-guard/baseband_guard.c; then
           echo "Applying BBG get_link fix"
-          patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/experimental/bbg/bbg_fix_get_link.patch"
+          patch -p1 --forward < "../../kernel_patches/experimental/bbg/bbg_fix_get_link.patch"
         fi
         
         # if [ "${{ inputs.ksu_type }}" = "KSUN" ]; then
