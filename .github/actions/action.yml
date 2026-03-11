@@ -1157,11 +1157,11 @@ runs:
       run: |
         set -euo pipefail
         echo "Add IP SET & IPv6_NAT Support"
-        cd "$CONFIG/kernel_platform"
+        cd "$CONFIG/kernel_platform/common"
         KERNEL_VERSION="${{ env.KERNEL_VER }}"
         
         if [[ "$KERNEL_VERSION" != "6.12" ]]; then
-            echo "CONFIG_BPF_STREAM_PARSER=y" >> "common/arch/arm64/configs/gki_defconfig"
+            echo "CONFIG_BPF_STREAM_PARSER=y" >> "arch/arm64/configs/gki_defconfig"
         fi
         
         cat >> common/arch/arm64/configs/gki_defconfig <<EOF
@@ -1189,7 +1189,7 @@ runs:
         CONFIG_IP6_NF_TARGET_MASQUERADE=y
         EOF
 
-        patch -p1 -F 3 < "../../kernel_patches/common/IPv6_NAT_FIX.patch"
+        patch -p1 -F 3 < "../../../kernel_patches/common/IPv6_NAT_FIX.patch"
 
     - name: Add Build based configs
       shell: bash
