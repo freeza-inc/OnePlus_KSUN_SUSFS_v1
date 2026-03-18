@@ -407,7 +407,6 @@ runs:
         if [ "${{ env.OP_SUSFS }}" = true ]; then
           echo "   SUSFS Branch: gki-$ANDROID_VERSION-$VERSION.$PATCHLEVEL"
         fi
-        
         echo "::endgroup::"
 
     - name: 🏷️ Set Build Identity (Hardcoded)
@@ -676,11 +675,11 @@ runs:
           return 1
         }
         
-        git clone --depth=1 https://github.com/TheWildJames/AnyKernel3.git -b "$ANYKERNEL_BRANCH"
-        git clone --depth=1 https://github.com/TheWildJames/kernel_patches.git
+        retry_clone "https://github.com/TheWildJames/AnyKernel3.git" "$ANYKERNEL_BRANCH"
+        retry_clone "https://github.com/TheWildJames/kernel_patches.git"
         
         if [ "${{ env.OP_SUSFS }}" = true ]; then
-          git clone https://gitlab.com/simonpunk/susfs4ksu.git
+          retry_clone "https://gitlab.com/simonpunk/susfs4ksu.git" "master" 0
           
           cd susfs4ksu
           
