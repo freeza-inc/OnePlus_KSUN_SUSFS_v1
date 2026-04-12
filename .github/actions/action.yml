@@ -49,6 +49,9 @@ outputs:
   image_sha256:
     description: 'SHA256 hash of kernel Image'
     value: ${{ steps.collect_stats.outputs.image_sha256 }}
+  zip_sha256:
+    description: 'SHA256 hash of AnyKernel3 Zip'
+    value: ${{ steps.create_zip.outputs.zip_sha256 }}
   warnings:
     description: 'Number of compiler warnings'
     value: ${{ steps.collect_stats.outputs.warnings_count }}
@@ -102,6 +105,7 @@ runs:
         c_compiler="$OP_C_COMPILER"
         rust_compiler="$OP_RUST_COMPILER"
         zyc_compiler="$OP_ZYC_COMPILER"
+        ds="$OP_DS"
         optimize='${{ inputs.optimize_level }}'
         
         errors=()
@@ -225,6 +229,12 @@ runs:
         # OP_RUST_COMPILER currently has no checks!
         
         # OP_ZYC_COMPILER currently has no checks!
+        
+        if [[ -z "$ds" ]]; then
+          errors+=("Input 'ds' cannot be empty")
+        elif [[ "$ds" != "true" && "$ds" != "false" ]]; then
+          errors+=("Input 'ds' contains invalid characters. Allowed: 'true' or 'false'. Got: '$ds'")
+        fi
         
         case "$optimize" in
           O2|O3) ;;
@@ -476,8 +486,8 @@ runs:
                 sleep 8
             fi
           done
-          
-        if [ "$download_success" = true ]; then
+        
+          if [ "$download_success" = true ]; then
             # Extract
             echo "Extracting to $ZYC_DIR ..."
             if tar -xzf "$TEMP_TAR" -C "$ZYC_DIR" 2>/dev/null; then
@@ -1146,19 +1156,6 @@ runs:
         echo "CONFIG_BBG=y" >> common/arch/arm64/configs/gki_defconfig
         sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' common/security/Kconfig
         
-        if grep -qxF $'\t\tconst char* symlink_target_link = inode->i_op->get_link(dentry, inode, NULL);' ./Baseband-guard/baseband_guard.c; then
-          echo "Applying BBG get_link fix"
-          patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/experimental/bbg/bbg_fix_get_link.patch"
-        fi
-        
-        # if [ "${{ inputs.ksu_type }}" = "KSUN" ]; then
-          # cd ./KernelSU-Next
-        # else
-          # cd ./KernelSU
-        # fi
-        
-        # echo "Patching BBG Enhanced Security!"
-        # patch -p1 --forward < "../../../kernel_patches/common/bbg_untrusted_cred.patch"
         echo "✅ BBG LSM added"
         echo "::endgroup::"
 
@@ -1253,7 +1250,6 @@ runs:
         echo "Patching use_unlikely_wrap_cpufreq.patch"
         patch -p1 -F3 --forward < "$KERNEL_PATCHES_FOLDER/common/use_unlikely_wrap_cpufreq.patch"
         
-        
         echo "✅ Other patches applied"
         echo "::endgroup::"
 
@@ -1332,8 +1328,10 @@ runs:
         cd "$COMMON_KERNEL_FOLDER"
         KERNEL_VERSION="${{ env.KERNEL_VER }}"
         
-        if [[ "$KERNEL_VERSION" != "6.12" ]]; then
-            echo "CONFIG_BPF_STREAM_PARSER=y" >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig"
+        if [[ "$KERNEL_VERSION" == "6.12" ]] || [[ "$OP_BRANCH" == wild/mt* ]]; then
+          echo "::debug::Skipping CONFIG_BPF_STREAM_PARSER for $KERNEL_VERSION / $OP_BRANCH"
+        else
+          echo "CONFIG_BPF_STREAM_PARSER=y" >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig"
         fi
         
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
@@ -1363,6 +1361,37 @@ runs:
         
         patch -p1 -F 3 < "$KERNEL_PATCHES_FOLDER/common/IPv6_NAT_FIX.patch"
 
+    - name: Add Droidspaces support
+      shell: bash
+      if: ${{ env.OP_DS == 'true' }}
+      run: |
+        set -euo pipefail
+        echo "::group::Add Droidspaces Support"
+        cd "$COMMON_KERNEL_FOLDER"
+        
+        echo "Applying patch to enable SYSVIPC without breaking ABI"
+        case "$OP_BRANCH" in
+          wild/sm8550|wild/sm7550)
+            patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/common/droidspaces/fix_sysvipc_kabi_1_2_3.patch"
+            ;;
+          *)
+            patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/common/droidspaces/fix_sysvipc_kabi_6_7_8.patch"
+            ;;
+        esac
+        
+        cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
+        CONFIG_SYSVIPC=y
+        CONFIG_DEVTMPFS=y
+        CONFIG_PID_NS=y
+        CONFIG_POSIX_MQUEUE=y
+        CONFIG_NETFILTER_XT_TARGET_REJECT=y
+        CONFIG_NETFILTER_XT_TARGET_LOG=y
+        CONFIG_NETFILTER_XT_MATCH_RECENT=y
+        EOF
+        
+        echo "✅ Droidspaces Support applied"
+        echo "::endgroup::"
+
     - name: Add Build based configs
       shell: bash
       run: |
@@ -1383,7 +1412,10 @@ runs:
         set -euo pipefail
         echo "Add Build based configs"
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
-        CONFIG_ANDROID_BINDER_IPC_RUST=m
+        CONFIG_ANDROID_BINDER_IPC_RUST=y
+        CONFIG_CMDLINE="module_blacklist=rust_binder"
+        CONFIG_CMDLINE_EXTEND=y
+        CONFIG_CMDLINE_FORCE=n
         CONFIG_RUST=y
         EOF
 
@@ -1544,11 +1576,12 @@ runs:
           scripts/config --file "$OUT/.config" -d CC_OPTIMIZE_FOR_PERFORMANCE_O3
           KCFLAGS_EXTRA="-O2"
         fi
-        # case "$OP_BRANCH" in
-        # wild/sm8750|wild/sm8850|wild/sm8845)
-        # KCFLAGS_EXTRA="-mcpu=oryon-1 ${KCFLAGS_EXTRA}"
-        # ;;
-        # esac
+        
+        case "$OP_BRANCH" in
+          wild/sm8750|wild/sm8850|wild/sm8845)
+            KCFLAGS_EXTRA="-mcpu=oryon-1 ${KCFLAGS_EXTRA}"
+            ;;
+        esac
         
         case "${{ env.OP_LTO}}" in
           "none")
@@ -1616,7 +1649,7 @@ runs:
         BUILD_START=$(date +%s)
         set -o pipefail
         
-        make -j"$(nproc --all)" O="$OUT" KCFLAGS="$KCFLAGS" KCPPFLAGS="$KCPPFLAGS" 2>&1 | tee build.log
+        make -j"$(nproc --all)" O="$OUT" KCFLAGS="$KCFLAGS" KCPPFLAGS="$KCPPFLAGS" Image 2>&1 | tee build.log
         
         BUILD_END=$(date +%s)
         BUILD_TIME=$((BUILD_END - BUILD_START))
@@ -1779,6 +1812,20 @@ runs:
         fi
         
         cp "$IMAGE_PATH" "$AK3_FOLDER/Image"
+        
+        SYMVERS_SRC=""
+        for path in \
+          "$COMMON_KERNEL_FOLDER/out/Module.symvers" \
+          "$COMMON_KERNEL_FOLDER/out/arch/arm64/Module.symvers" \
+          "$COMMON_KERNEL_FOLDER/dist_dir/Module.symvers"
+        do
+          [[ -f "$path" ]] && SYMVERS_SRC="$path" && break
+        done
+        
+        if [[ -n "$SYMVERS_SRC" ]]; then
+          cp "$SYMVERS_SRC" "$AK3_FOLDER/Module.symvers"
+        fi
+        
         mv "${ARTIFACTS_FOLDER}/${OP_MODEL}_${OP_OS_VERSION}.txt" "$AK3_FOLDER/"
         cd "$AK3_FOLDER"
         
@@ -1805,6 +1852,7 @@ runs:
         
         ZIP_SIZE=$(stat -c%s "$ARTIFACTS_FOLDER/$ZIP_NAME")
         ZIP_SHA256=$(sha256sum "$ARTIFACTS_FOLDER/$ZIP_NAME" | awk '{print $1}')
+        printf 'zip_sha256=%s\n' "$ZIP_SHA256" >> "$GITHUB_OUTPUT"
         
         echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
         echo "ZIP_NAME=$ZIP_NAME" >> "$GITHUB_ENV"
@@ -1858,6 +1906,7 @@ runs:
           echo "Unicode Fix: ${{ env.OP_UNICODE }}"
           echo ""
           echo "Image SHA256: ${{ steps.collect_stats.outputs.image_sha256 }}"
+          echo "AnyKernel3 ZIP SHA256: ${{ steps.create_zip.outputs.zip_sha256 }}"
           echo "Compiler: ${CLANG_VERSION:-unknown}"
           echo "Warnings Count: ${{ steps.collect_stats.outputs.warnings_count }}"
           echo "Build Time: ${{ steps.collect_stats.outputs.build_time }}s"
@@ -1938,6 +1987,7 @@ runs:
           echo "| **Warnings** | ${{ steps.collect_stats.outputs.warnings_count }} |"
           echo "| **Compiler** | \`${CLANG_VERSION:-unknown}\` |"
           echo "| **Artifact Name** | \`${{ env.ZIP_NAME }}\` |"
+          echo "| **AnyKernel3 SHA256** | \`${{ steps.create_zip.outputs.zip_sha256 }}\` |"
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Upload Artifacts
