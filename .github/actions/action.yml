@@ -1271,33 +1271,6 @@ runs:
         
         echo "✅ Other patches applied"
         echo "::endgroup::"
-
-    ‎.github/actions/action.yml‎
-Original file line number	Diff line number	Diff line change
-@@ -106,6 +106,7 @@ runs:
-        rust_compiler="$OP_RUST_COMPILER"
-        zyc_compiler="$OP_ZYC_COMPILER"
-        ds="$OP_DS"
-        ntsync="$OP_NTSYNC"
-        optimize='${{ inputs.optimize_level }}'
-        
-        errors=()
-@@ -236,6 +237,12 @@ runs:
-          errors+=("Input 'ds' contains invalid characters. Allowed: 'true' or 'false'. Got: '$ds'")
-        fi
-        
-        if [[ -z "$ntsync" ]]; then
-          errors+=("Input 'ntsync' cannot be empty")
-        elif [[ "$ntsync" != "true" && "$ntsync" != "false" ]]; then
-          errors+=("Input 'ntsync' contains invalid characters. Allowed: 'true' or 'false'. Got: '$ntsync'")
-        fi
-        
-        case "$optimize" in
-          O2|O3) ;;
-          *) errors+=("optimize_level must be O2 or O3. Got: '$optimize'"); ;;
-@@ -1222,6 +1229,49 @@ runs:
-        echo "✅ Other patches applied"
-        echo "::endgroup::"
         
     - name: Apply NTSync Patch
       shell: bash
