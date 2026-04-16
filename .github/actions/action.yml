@@ -105,7 +105,7 @@ runs:
         c_compiler="$OP_C_COMPILER"
         rust_compiler="$OP_RUST_COMPILER"
         zyc_compiler="$OP_ZYC_COMPILER"
-        ntsync="$OP_NTSYNC
+        ntsync="$OP_NTSYNC"
         ds="$OP_DS"
         optimize='${{ inputs.optimize_level }}'
         
