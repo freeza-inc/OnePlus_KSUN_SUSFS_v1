@@ -1142,8 +1142,8 @@ runs:
               done
               echo "Patching Hook Mode!"
               patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/v2.2.0/overwrite_hook_mode.patch"
-              echo "Patching KSU_TOOLKIT Support for SusFS kernel!"
-              patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/v2.2.0/ksu_toolkit.patch"
+              # echo "Patching KSU_TOOLKIT Support for SusFS kernel!"
+              # patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/v2.2.0/ksu_toolkit.patch"
             else
               cd "$KSU_FOLDER"
               patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
