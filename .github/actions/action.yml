@@ -1328,6 +1328,10 @@ runs:
       run: |
         set -euo pipefail
         echo "::group::Apply Other patches"
+        SRC2="$KERNEL_PLATFORM_FOLDER/KernelSU-Next/kernel/selinux/selinux.c"                
+        sed -i '0,\|#include "linux/version.h"|s||#include "linux/version.h"\n#include <linux/compiler.h>|' "$SRC2"
+        sed -i 's|(void \*)find_kernel_symbol_exact("|(void *)ksu_resolve_symbol_for_functable_hook("|g' "$SRC2"
+        sed -i -E "s#$defs_re#\1\2 __nocfi \3(#" "$SRC2"
         cd "$COMMON_KERNEL_FOLDER"
         KERNEL_VERSION="${{ env.KERNEL_VER }}"
         MIN_VERSION="5.16"
