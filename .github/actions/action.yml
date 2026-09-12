@@ -877,8 +877,8 @@ runs:
         }
         
         retry_clone "https://github.com/WildKernels/AnyKernel3.git" "$ANYKERNEL_BRANCH"
-        retry_clone "https://github.com/Ante0/kernel_patches.git" "main" "1"
-        # retry_clone "https://github.com/Bouteillepleine/kernel_patches.git" "main" "1"
+        # retry_clone "https://github.com/Ante0/kernel_patches.git" "main" "1"
+        retry_clone "https://github.com/Bouteillepleine/kernel_patches.git" "main" "1"
         # retry_clone "https://github.com/WildKernels/kernel_patches.git" "main" "1"
         
         if [ "${{ env.OP_SUSFS }}" = true ]; then
@@ -1141,12 +1141,12 @@ runs:
               patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
               for file in $(find ./kernel -maxdepth 2 -name "*.rej" -exec basename {} .rej \;); do
                 echo "Patching file: $file with fix_$file.patch"
-                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/v2.2.0/fix_$file.patch"
+                patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/fix_$file.patch"
               done
               echo "Patching Hook Mode!"
-              patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/v2.2.0/overwrite_hook_mode.patch"
+              patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/overwrite_hook_mode.patch"
               # echo "Patching KSU_TOOLKIT Support for SusFS kernel!"
-              # patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/v2.2.0/ksu_toolkit.patch"
+              # patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/next/susfs_fix_patches/$susfs_version/ksu_toolkit.patch"
             else
               cd "$KSU_FOLDER"
               patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" || true
