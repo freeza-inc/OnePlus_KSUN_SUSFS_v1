@@ -1331,6 +1331,7 @@ runs:
       run: |
         set -euo pipefail
         echo "::group::Apply Other patches"
+        defs_re='^(static )?(int|void) (ksu_security_(secctx_to_secid|secid_to_secctx|release_secctx))\('
         SRC2="$KERNEL_PLATFORM_FOLDER/KernelSU-Next/kernel/selinux/selinux.c"                
         sed -i '0,\|#include "linux/version.h"|s||#include "linux/version.h"\n#include <linux/compiler.h>|' "$SRC2"
         sed -i 's|(void \*)find_kernel_symbol_exact("|(void *)ksu_resolve_symbol_for_functable_hook("|g' "$SRC2"
