@@ -840,7 +840,7 @@ runs:
               attempt=$((attempt + 1))
           done
           
-          echo "::error::All attempts failed for $url"
+          echo "::error::All attempts failed for $download_url"
           return 1
         }
         
