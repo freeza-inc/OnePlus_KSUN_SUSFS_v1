@@ -877,7 +877,7 @@ runs:
         }
         
         retry_clone "https://github.com/WildKernels/AnyKernel3.git" "$ANYKERNEL_BRANCH"
-        retry_clone "https://github.com/freeza-inc/kernel_patchesB.git" "main" "1"
+        retry_clone "https://github.com/freeza-inc/kernel_patches.git" "main" "1"
         # retry_clone "https://github.com/Ante0/kernel_patches.git" "main" "1"
         # retry_clone "https://github.com/Bouteillepleine/kernel_patches.git" "main" "1"
         # retry_clone "https://github.com/WildKernels/kernel_patches.git" "main" "1"
