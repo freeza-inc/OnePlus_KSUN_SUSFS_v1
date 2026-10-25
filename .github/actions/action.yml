@@ -1811,10 +1811,10 @@ runs:
         patch -p1 --forward < "$KERNEL_PATCHES_FOLDER/common/droidspaces/0001-Return-ghost-task-if-task-is-null-and-is-requested-b.patch"
         
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
-        CONFIG_SYSVIPC=y
+        # CONFIG_SYSVIPC=y
         # CONFIG_DEVTMPFS=y
         # CONFIG_PID_NS=y
-        CONFIG_POSIX_MQUEUE=y
+        # CONFIG_POSIX_MQUEUE=y
         CONFIG_NETFILTER_XT_TARGET_REJECT=y
         CONFIG_NETFILTER_XT_TARGET_LOG=y
         CONFIG_NETFILTER_XT_MATCH_RECENT=y
