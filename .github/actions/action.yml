@@ -1728,7 +1728,7 @@ runs:
         set -euo pipefail
         echo "Add Other tweaks"
         cd "$COMMON_KERNEL_FOLDER"
-        sed -i 's|\$(obj)/config_data\.gz: \$(obj)/config_data FORCE|$(obj)/config_data.gz: arch/arm64/configs/gki_defconfigorig FORCE|g' ./kernel/Makefile
+        sed -i 's|\$(obj)/config_data\.gz: \$(obj)/config_data FORCE|$(obj)/config_data.gz: arch/arm64/configs/gki2_defconfig FORCE|g' ./kernel/Makefile
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
         CONFIG_ZRAM_DEF_COMP="lz4"
         CONFIG_ZRAM_DEF_COMP_LZ4=y
