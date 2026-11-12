@@ -1180,7 +1180,7 @@ runs:
 
         cd "$COMMON_KERNEL_FOLDER"
 
-        COMPAT_PY="scripts/kernel_fix_patches/apply_kernel_compat.py"
+        COMPAT_PY="$KERNEL_PATCHES_FOLDER/scripts/kernel_fix_patches/apply_kernel_compat.py"
         # Outside the kernel tree so git clean / repo sync cannot wipe it.
         COMPAT_STATE="${RUNNER_TEMP}/susfs-compat-state-${ANDROID_VER}-${KERNEL_VER}.json"
 
